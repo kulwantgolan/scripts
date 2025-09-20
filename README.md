@@ -1,4 +1,4 @@
-# HELPFUll SCRIPTS
+# HELPFUL SCRIPTS
 
 ## Category: GIT
 ### DESC: Copy current local folder to github repo
