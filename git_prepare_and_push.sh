@@ -53,6 +53,15 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+.aws/
+.config/
+.local/
+.opencode/
+.ssh/            
+.cache/  
+.launchpadlib/  
+.npm/        
+.terminal_logs/
 EOF
   echo "==> Wrote .gitignore"
 fi
