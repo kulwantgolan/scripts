@@ -13,7 +13,9 @@ set -euo pipefail
 REPO="${1:-}"
 MODE="${2:-https}"                 # https | ssh
 USER="${3:-kulwantgolan}"
-PAT="${4:-}"                       # only used for https
+# PAT="${4:-}"                       # only used for https
+PAT="${GITHUB_PAT:?Please set GITHUB_PAT environment variable}"
+
 
 if [[ -z "$REPO" ]]; then
   echo "Usage: $0 <repo-name> [https|ssh] [github-username] [PAT]" >&2
