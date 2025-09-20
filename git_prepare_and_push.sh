@@ -78,14 +78,59 @@ git remote set-url origin "$REMOTE_URL" 2>/dev/null || git remote add origin "$R
 echo "==> Remote set to: $REMOTE_URL"
 
 # 7) If HTTPS + PAT provided, store it (plaintext)
-if [[ "$MODE" == "https" && -n "$PAT" ]]; then
-  git config --global credential.helper store
-  printf "https://%s:%s@github.com\n" "$USER" "$PAT" > ~/.git-credentials
-  chmod 600 ~/.git-credentials || true
-  echo "==> Stored PAT in ~/.git-credentials"
+# if [[ "$MODE" == "https" && -n "$PAT" ]]; then
+#  git config --global credential.helper store
+#  printf "https://%s:%s@github.com\n" "$USER" "$PAT" > ~/.git-credentials
+#  chmod 600 ~/.git-credentials || true
+#  echo "==> Stored PAT in ~/.git-credentials"
+# fi
+
+# helper: mask PAT in logs
+mask() { echo "$1" | sed -E 's/.{6}$/*******/'; }
+
+# 7) If HTTPS + PAT provided, store it (plaintext, verified, then proceed)
+if [[ "$MODE" == "https" && -n "${PAT:-}" ]]; then
+  CRED_FILE="${HOME:-/root}/.git-credentials"
+  CRED_DIR="$(dirname "$CRED_FILE")"
+  mkdir -p "$CRED_DIR"
+
+  # explicitly point credential.helper to this file
+  git config --global credential.helper "store --file=${CRED_FILE}"
+
+  TMP_FILE="$(mktemp "${CRED_DIR}/.git-credentials.tmp.XXXXXX")"
+  printf "https://%s:%s@github.com\n" "$USER" "$PAT" > "$TMP_FILE"
+
+  # lock down perms before moving into place
+  chmod 600 "$TMP_FILE"
+  mv -f "$TMP_FILE" "$CRED_FILE"
+
+  # verify file exists, readable, and contains expected username
+  if [[ ! -s "$CRED_FILE" ]] || ! grep -q "https://${USER}:" "$CRED_FILE"; then
+    echo "❌ Failed to create credentials at: $CRED_FILE"
+    echo "   Make sure HOME is set and the script has write permission to ${CRED_DIR}"
+    exit 1
+  fi
+
+  echo "✅ Stored PAT in $(mask "$CRED_FILE") and configured credential.helper"
 fi
 
+# ensure these lines are present in your .gitignore
+grep -qxF '.git-credentials' .gitignore || echo '.git-credentials' >> .gitignore
+grep -qxF '*.credentials'    .gitignore || echo '*.credentials'    >> .gitignore
+
+
 # 8) Push
+
+if [[ "$MODE" == "https" ]]; then
+  CRED_FILE="${HOME:-/root}/.git-credentials"
+  if [[ ! -s "$CRED_FILE" ]]; then
+    echo "❌ No credentials at ${CRED_FILE}. Not pushing."
+    echo "   Provide PAT or run: git config --global credential.helper 'store --file=${CRED_FILE}'"
+    echo "   then push once and enter username (kulwantgolan) + PAT to save."
+    exit 1
+  fi
+fi
+
 echo "==> Pushing main ..."
 if git push -u origin main; then
   echo "==> Push succeeded."
