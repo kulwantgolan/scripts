@@ -70,7 +70,7 @@ fi
 git add -A
 
 # Git identity (global, once on this machine)
-git config --global user.email "${USER}.com"
+git config --global user.email "${USER}@gmail.com"
 git config --global user.name  "${USER}"
 
 # 4) Commit
